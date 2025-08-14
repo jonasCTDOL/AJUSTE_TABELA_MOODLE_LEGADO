@@ -30,21 +30,21 @@ except Exception as e:
 # --- ENTRADAS DO USUÁRIO ---
 st.header("1. Insira os dados da Planilha")
 sheet_name = st.text_input("Nome da Planilha Google Sheets:", 'CARGAS_MOODLE_LEGADO')
-worksheet_name = st.text_input("Nome da Página (Aba) na Planilha:")
+worksheet_name = st.text_input("Nome da Página (Aba) de Origem na Planilha:")
 
 st.header("2. Insira os dados do Curso")
 course1_value = st.text_input("Identificador do Curso no Moodle (ex: NOME_CURSO_2024):")
 group1_value = st.text_input("Identificador do Grupo/Turma no Moodle (ex: TURMA_A):")
 
 st.header("3. Opções de Saída")
-overwrite_sheet = st.checkbox("Atualizar a planilha original com os dados processados (Atenção: os dados originais serão substituídos!)")
+new_worksheet_name = st.text_input("Nome da Nova Página para Salvar os Dados Ajustados (deixe em branco para não salvar na planilha)")
 
 
 # --- LÓGICA DE PROCESSAMENTO ---
 if st.button('🚀 Processar e Gerar CSV'):
     # Validação das entradas
     if not all([sheet_name, worksheet_name, course1_value, group1_value]):
-        st.warning("⚠️ Por favor, preencha todos os campos antes de processar.")
+        st.warning("⚠️ Por favor, preencha todos os campos de entrada antes de processar.")
     else:
         try:
             with st.spinner('Aguarde... Carregando e processando os dados...'):
@@ -63,7 +63,7 @@ if st.button('🚀 Processar e Gerar CSV'):
                 columns_to_keep = ['CPF', 'Nome', 'Cargo', 'E-mail']
                 # Verifica se todas as colunas existem
                 if not all(col in df_gsheet.columns for col in columns_to_keep):
-                    st.error(f"Erro: A planilha deve conter as colunas: {', '.join(columns_to_keep)}")
+                    st.error(f"Erro: A planilha de origem deve conter as colunas: {', '.join(columns_to_keep)}")
                     st.stop()
                 
                 df_cleaned = df_gsheet[columns_to_keep].copy()
@@ -94,14 +94,26 @@ if st.button('🚀 Processar e Gerar CSV'):
             st.subheader("📊 Pré-visualização dos Dados Transformados:")
             st.dataframe(df_output.head())
 
-            # --- ATUALIZAÇÃO DA PLANILHA (SE MARCADO) ---
-            if overwrite_sheet:
+            # --- SALVAR EM NOVA PÁGINA NA PLANILHA (SE NOME FOR FORNECIDO) ---
+            if new_worksheet_name:
                 try:
-                    with st.spinner(f"Atualizando a página '{worksheet_name}'... (Ação irreversível!)"):
-                        set_with_dataframe(worksheet, df_output, resize=True)
-                    st.success(f"✅ Página '{worksheet_name}' atualizada com sucesso na planilha '{sheet_name}'.")
+                    with st.spinner(f"Verificando e salvando na página '{new_worksheet_name}'..."):
+                        existing_worksheets = [ws.title for ws in spreadsheet.worksheets()]
+                        if new_worksheet_name in existing_worksheets:
+                            st.warning(f"⚠️ A página '{new_worksheet_name}' já existe e será sobrescrita.")
+                            new_worksheet = spreadsheet.worksheet(new_worksheet_name)
+                            new_worksheet.clear()
+                        else:
+                            new_worksheet = spreadsheet.add_worksheet(
+                                title=new_worksheet_name,
+                                rows=df_output.shape[0] + 1,
+                                cols=df_output.shape[1]
+                            )
+                        
+                        set_with_dataframe(new_worksheet, df_output, resize=True)
+                        st.success(f"✅ Dados salvos com sucesso na nova página '{new_worksheet_name}' da planilha '{sheet_name}'.")
                 except Exception as e:
-                    st.error(f"🚨 Falha ao atualizar a planilha: {e}")
+                    st.error(f"🚨 Falha ao salvar os dados na nova página da planilha: {e}")
                     st.stop()
 
             # --- GERAÇÃO E DOWNLOAD DO CSV ---
@@ -120,7 +132,7 @@ if st.button('🚀 Processar e Gerar CSV'):
         except gspread.exceptions.SpreadsheetNotFound:
             st.error(f"🚨 Erro: A planilha '{sheet_name}' não foi encontrada. Verifique o nome e as permissões de compartilhamento.")
         except gspread.exceptions.WorksheetNotFound:
-            st.error(f"🚨 Erro: A página '{worksheet_name}' não foi encontrada na planilha '{sheet_name}'. Verifique o nome da aba.")
+            st.error(f"🚨 Erro: A página de origem '{worksheet_name}' não foi encontrada na planilha '{sheet_name}'. Verifique o nome da aba.")
         except Exception as e:
             st.error(f"Ocorreu um erro inesperado durante o processamento: {e}")
             st.error("Verifique se os nomes da planilha/página e os cabeçalhos das colunas ('CPF', 'Nome', 'Cargo', 'E-mail') estão corretos.")
