@@ -36,6 +36,10 @@ st.header("2. Insira os dados do Curso")
 course1_value = st.text_input("Identificador do Curso no Moodle (ex: NOME_CURSO_2024):")
 group1_value = st.text_input("Identificador do Grupo/Turma no Moodle (ex: TURMA_A):")
 
+st.header("3. Opções de Saída")
+overwrite_sheet = st.checkbox("Atualizar a planilha original com os dados processados (Atenção: os dados originais serão substituídos!)")
+
+
 # --- LÓGICA DE PROCESSAMENTO ---
 if st.button('🚀 Processar e Gerar CSV'):
     # Validação das entradas
@@ -87,22 +91,31 @@ if st.button('🚀 Processar e Gerar CSV'):
                 output_columns = ['username', 'password', 'firstname', 'lastname', 'email', 'course1', 'role1', 'group1']
                 df_output = df_moodle[output_columns]
 
-                st.subheader("📊 Pré-visualização dos Dados Transformados:")
-                st.dataframe(df_output.head())
+            st.subheader("📊 Pré-visualização dos Dados Transformados:")
+            st.dataframe(df_output.head())
 
-                # Converter DataFrame para CSV em memória
-                csv_data = df_output.to_csv(index=False).encode('utf-8')
-                output_filename = f"{course1_value}_{group1_value}.csv"
+            # --- ATUALIZAÇÃO DA PLANILHA (SE MARCADO) ---
+            if overwrite_sheet:
+                try:
+                    with st.spinner(f"Atualizando a página '{worksheet_name}'... (Ação irreversível!)"):
+                        set_with_dataframe(worksheet, df_output, resize=True)
+                    st.success(f"✅ Página '{worksheet_name}' atualizada com sucesso na planilha '{sheet_name}'.")
+                except Exception as e:
+                    st.error(f"🚨 Falha ao atualizar a planilha: {e}")
+                    st.stop()
 
-                st.success(f"🎉 Arquivo '{output_filename}' processado e pronto para download!")
+            # --- GERAÇÃO E DOWNLOAD DO CSV ---
+            csv_data = df_output.to_csv(index=False).encode('utf-8')
+            output_filename = f"{course1_value}_{group1_value}.csv"
 
-                # Botão de download
-                st.download_button(
-                    label="📥 Baixar Arquivo CSV",
-                    data=csv_data,
-                    file_name=output_filename,
-                    mime="text/csv"
-                )
+            st.success(f"🎉 Arquivo '{output_filename}' processado e pronto para download!")
+
+            st.download_button(
+                label="📥 Baixar Arquivo CSV",
+                data=csv_data,
+                file_name=output_filename,
+                mime="text/csv"
+            )
 
         except gspread.exceptions.SpreadsheetNotFound:
             st.error(f"🚨 Erro: A planilha '{sheet_name}' não foi encontrada. Verifique o nome e as permissões de compartilhamento.")
