@@ -114,7 +114,10 @@ if st.button('🚀 Processar e Gerar CSV'):
                                 cols=df_output.shape[1]
                             )
                         
-                        set_with_dataframe(new_worksheet, df_output, resize=True)
+                        # Cria uma cópia do dataframe para o Sheets e aplica a formatação de texto no username
+                        df_for_sheets = df_output.copy()
+                        df_for_sheets['username'] = '="' + df_for_sheets['username'] + '"'
+                        set_with_dataframe(new_worksheet, df_for_sheets, resize=True)
 
                         st.success(f"✅ Dados salvos com sucesso na nova página '{new_worksheet_name}' da planilha '{sheet_name}'.")
                 except Exception as e:
