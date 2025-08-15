@@ -113,6 +113,10 @@ if st.button('🚀 Processar e Gerar CSV'):
                             )
                         
                         set_with_dataframe(new_worksheet, df_output, resize=True)
+
+                        # Formata a coluna 'username' (coluna A) como texto para preservar os zeros à esquerda
+                        new_worksheet.format('A:A', {'numberFormat': {'type': 'TEXT'}})
+
                         st.success(f"✅ Dados salvos com sucesso na nova página '{new_worksheet_name}' da planilha '{sheet_name}'.")
                 except Exception as e:
                     st.error(f"🚨 Falha ao salvar os dados na nova página da planilha: {e}")
