@@ -82,6 +82,8 @@ if st.button('🚀 Processar e Gerar CSV'):
                 # Limpeza e formatação do CPF para ser o 'username'
                 df_moodle['username'] = df_moodle['username'].astype(str).str.replace(r'[.-]', '', regex=True)
                 df_moodle['username'] = df_moodle['username'].str.zfill(11)
+                # Força o Google Sheets a tratar o valor como texto explícito, envolvendo-o em uma fórmula
+                df_moodle['username'] = '="' + df_moodle['username'] + '"'
 
                 # Adicionar colunas fixas e dinâmicas
                 df_moodle['password'] = 'Ead#1234'
@@ -113,9 +115,6 @@ if st.button('🚀 Processar e Gerar CSV'):
                             )
                         
                         set_with_dataframe(new_worksheet, df_output, resize=True)
-
-                        # Formata a coluna 'username' (coluna A) como texto para preservar os zeros à esquerda
-                        new_worksheet.format('A:A', {'numberFormat': {'type': 'TEXT'}})
 
                         st.success(f"✅ Dados salvos com sucesso na nova página '{new_worksheet_name}' da planilha '{sheet_name}'.")
                 except Exception as e:
