@@ -60,6 +60,7 @@ if st.button('🚀 Processar e Gerar CSV'):
 
                 # --- TRANSFORMAÇÃO DOS DADOS ---
                 # Manter apenas as colunas necessárias (não precisamos mais de 'Cargo')
+                # Manter apenas as colunas necessárias (não precisamos mais de 'Cargo')
                 columns_to_keep = ['CPF', 'Nome', 'E-mail']
                 # Verifica se todas as colunas existem
                 if not all(col in df_gsheet.columns for col in columns_to_keep):
@@ -75,6 +76,9 @@ if st.button('🚀 Processar e Gerar CSV'):
                     'E-mail': 'email',
                 }
                 df_moodle = df_cleaned.rename(columns=column_mapping)
+
+                # Adicionar a coluna lastname vazia, conforme solicitado
+                df_moodle['lastname'] = ''
 
                 # Adicionar a coluna lastname vazia, conforme solicitado
                 df_moodle['lastname'] = ''
