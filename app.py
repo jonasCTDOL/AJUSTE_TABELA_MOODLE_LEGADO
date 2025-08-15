@@ -59,16 +59,13 @@ if st.button('🚀 Processar e Gerar CSV'):
                 st.success(f"Dados carregados com sucesso da planilha '{sheet_name}', página '{worksheet_name}'.")
 
                 # --- TRANSFORMAÇÃO DOS DADOS ---
-                # Manter apenas as colunas necessárias (não precisamos mais de 'Cargo')
                 columns_to_keep = ['CPF', 'Nome', 'E-mail']
-                # Verifica se todas as colunas existem
                 if not all(col in df_gsheet.columns for col in columns_to_keep):
                     st.error(f"Erro: A planilha de origem deve conter as colunas: {', '.join(columns_to_keep)}")
                     st.stop()
                 
                 df_cleaned = df_gsheet[columns_to_keep].copy()
 
-                # Renomear colunas para o formato do Moodle
                 column_mapping = {
                     'CPF': 'username',
                     'Nome': 'firstname',
@@ -76,14 +73,11 @@ if st.button('🚀 Processar e Gerar CSV'):
                 }
                 df_moodle = df_cleaned.rename(columns=column_mapping)
 
-                # Adicionar a coluna lastname vazia, conforme solicitado
                 df_moodle['lastname'] = ''
 
                 # Limpeza e formatação do CPF para ser o 'username'
                 df_moodle['username'] = df_moodle['username'].astype(str).str.replace(r'[.-]', '', regex=True)
                 df_moodle['username'] = df_moodle['username'].str.zfill(11)
-                # Força o Google Sheets a tratar o valor como texto explícito, envolvendo-o em uma fórmula
-                df_moodle['username'] = '="' + df_moodle['username'] + '"'
 
                 # Adicionar colunas fixas e dinâmicas
                 df_moodle['password'] = 'Ead#1234'
@@ -98,7 +92,20 @@ if st.button('🚀 Processar e Gerar CSV'):
             st.subheader("📊 Pré-visualização dos Dados Transformados:")
             st.dataframe(df_output.head())
 
-            # --- SALVAR EM NOVA PÁGINA NA PLANILHA (SE NOME FOR FORNECIDO) ---
+            # --- GERAÇÃO E DOWNLOAD DO CSV (COM DADOS PUROS) ---
+            csv_data = df_output.to_csv(index=False).encode('utf-8')
+            output_filename = f"{course1_value}_{group1_value}.csv"
+
+            st.success(f"🎉 Arquivo '{output_filename}' processado e pronto para download!")
+
+            st.download_button(
+                label="📥 Baixar Arquivo CSV",
+                data=csv_data,
+                file_name=output_filename,
+                mime="text/csv"
+            )
+
+            # --- SALVAR EM NOVA PÁGINA NA PLANILHA (COM DADOS MODIFICADOS) ---
             if new_worksheet_name:
                 try:
                     with st.spinner(f"Verificando e salvando na página '{new_worksheet_name}'..."):
@@ -114,28 +121,15 @@ if st.button('🚀 Processar e Gerar CSV'):
                                 cols=df_output.shape[1]
                             )
                         
-                        # Cria uma cópia do dataframe para o Sheets e aplica a formatação de texto no username
+                        # Cria uma cópia do dataframe e adiciona o apóstrofo para forçar formato de texto no Sheets
                         df_for_sheets = df_output.copy()
-                        df_for_sheets['username'] = '="' + df_for_sheets['username'] + '"'
+                        df_for_sheets['username'] = "'" + df_for_sheets['username']
                         set_with_dataframe(new_worksheet, df_for_sheets, resize=True)
 
                         st.success(f"✅ Dados salvos com sucesso na nova página '{new_worksheet_name}' da planilha '{sheet_name}'.")
                 except Exception as e:
                     st.error(f"🚨 Falha ao salvar os dados na nova página da planilha: {e}")
                     st.stop()
-
-            # --- GERAÇÃO E DOWNLOAD DO CSV ---
-            csv_data = df_output.to_csv(index=False).encode('utf-8')
-            output_filename = f"{course1_value}_{group1_value}.csv"
-
-            st.success(f"🎉 Arquivo '{output_filename}' processado e pronto para download!")
-
-            st.download_button(
-                label="📥 Baixar Arquivo CSV",
-                data=csv_data,
-                file_name=output_filename,
-                mime="text/csv"
-            )
 
         except gspread.exceptions.SpreadsheetNotFound:
             st.error(f"🚨 Erro: A planilha '{sheet_name}' não foi encontrada. Verifique o nome e as permissões de compartilhamento.")
