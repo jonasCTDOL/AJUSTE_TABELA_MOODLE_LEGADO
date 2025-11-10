@@ -73,7 +73,8 @@ if st.button('🚀 Processar e Gerar CSV'):
                 }
                 df_moodle = df_cleaned.rename(columns=column_mapping)
 
-                df_moodle['lastname'] = ''
+                # O campo 'lastname' (sobrenome) é obrigatório no Moodle. Usamos '.' como padrão.
+                df_moodle['lastname'] = '.'
 
                 # Limpeza e formatação do CPF para ser o 'username'
                 df_moodle['username'] = df_moodle['username'].astype(str).str.replace(r'[.-]', '', regex=True)
